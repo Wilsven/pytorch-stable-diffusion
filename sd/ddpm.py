@@ -105,7 +105,7 @@ class DDPMSampler:
     def add_noise(
         self, latents: torch.FloatTensor, timestep: torch.IntTensor
     ) -> torch.FloatTensor:
-        """Addes noise to the latent vector (i.e. output of VAE encoder)."""
+        """Adds noise to the latent vector (i.e. output of VAE encoder) in image-to-image generation."""
         alphas_hat = self.alphas_hat.to(device=latents.device, dtype=latents.dtype)
         timestep = timestep.to(device=latents.device)
 
