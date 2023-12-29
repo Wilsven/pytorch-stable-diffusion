@@ -5,6 +5,8 @@ from attention import SelfAttention
 
 
 class CLIPEmbedding(nn.Module):
+    """Converts the text prompt into embeddings with positional information."""
+
     def __init__(self, n_vocab: int, n_embed: int, n_tokens: int):
         super().__init__()
         self.token_embedding = nn.Embedding(n_vocab, n_embed)
@@ -22,6 +24,8 @@ class CLIPEmbedding(nn.Module):
 
 
 class CLIPLayer(nn.Module):
+    """Performs the self-attention mechanism on the prompt embeddings."""
+
     def __init__(self, n_heads: int, n_embed: int):
         super().__init__()
         self.layernorm_1 = nn.LayerNorm(n_embed)
@@ -56,6 +60,8 @@ class CLIPLayer(nn.Module):
 
 
 class CLIP(nn.Module):
+    """The final Contrastive Language-Image Pre-training (CLIP) model."""
+
     def __init__(self):
         super().__init__()
         self.embedding = CLIPEmbedding(49408, 768, 77)

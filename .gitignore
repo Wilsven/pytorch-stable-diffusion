@@ -1,5 +1,6 @@
 data/*
-!data/.gitkeep #exclude
+# exclude
+!data/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

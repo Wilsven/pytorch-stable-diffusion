@@ -5,6 +5,8 @@ from torch.nn import functional as F
 
 
 class Encoder(nn.Sequential):
+    """Encodes the input noise or image into a latent vector"""
+
     def __init__(self):
         super().__init__(
             # (b, 3, h, w) -> (b, 128, h, w)
@@ -54,16 +56,17 @@ class Encoder(nn.Sequential):
             # Perform manual padding on these convolutions where stride=2
             if getattr(module, "stride", None) == (2, 2):
                 # (padding_left, padding_right, padding_top, padding_bottom)
+                # (b, 3, h, w) -> (b, 3, h + padding_top + padding_bottom, w + padding_left + padding_right)
                 x = F.pad(x, (0, 1, 0, 1))
             x = module(x)
 
-        # Output of VAE is the mean and log of the variance so we can
-        # split across the channels (second dimension) into 2 chunks
+        # Output of VAE encoder is the mean and log of the variance so we
+        # can split across the channels (second dimension) into 2 chunks
         mean, log_var = torch.chunk(
             x, 2, dim=1
         )  # (b, 8, h / 8, w / 8) -> 2 x (b, 4, h / 8, w / 8)
 
-        # Clamps the log variance between a suitable range
+        # Clamps the log variance, so that the variance is between (circa) 1e-14 and 1e8.
         log_var = torch.clamp(log_var, -30, 20)  # (b, 4, h / 8, w / 8)
         # Transform log variance into variance
         var = log_var.exp()  # (b, 4, h / 8, w / 8)
@@ -79,6 +82,7 @@ class Encoder(nn.Sequential):
         x = mean + stdev * noise  # (b, 4, h / 8, w / 8)
 
         # Scale the output by a constant (from original stable diffusion repository)
+        # Constant taken from: https://github.com/CompVis/stable-diffusion/blob/21f890f9da3cfbeaba8e2ac3c425ee9e998d5229/configs/stable-diffusion/v1-inference.yaml#L17C1-L17C1
         x *= 0.18215
 
         # (b, 4, h / 8, w / 8)

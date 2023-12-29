@@ -30,6 +30,7 @@ def generate(
     idle_device: Optional[str] = None,
     tokenizer: Optional[CLIPTokenizer] = None,
 ):
+    """Generates the image based on a prompt (text-to-image) or input image (image-to-image)."""
     with torch.no_grad():
         if not (0.0 < strength < 1.0):
             raise ValueError("strength must be between 0 and 1.")
@@ -178,6 +179,7 @@ def generate(
 def rescale(
     x: torch.Tensor, old_range: tuple[int], new_range: tuple[int], clamp: bool = False
 ) -> torch.Tensor:
+    """Rescale the pixel values of the generated image from -1 to 1 to between 0 and 255."""
     old_min, old_max = old_range
     new_min, new_max = new_range
 
@@ -192,6 +194,7 @@ def rescale(
 
 
 def get_time_embedding(timestep: int) -> torch.Tensor:
+    """From the integer timestep, convert it into an embedding of shape (1, 160)"""
     # (160, )
     freqs = torch.pow(10000, -torch.arange(start=0, end=160, dtype=torch.float32) / 160)
     # (1, 160) because of unsqueeze operation

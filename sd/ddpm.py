@@ -3,6 +3,12 @@ import numpy as np
 
 
 class DDPMSampler:
+    """
+    Sampler which iteratively removes the predicted noise
+    from the UNet to produce a less noisy image. Does this
+    for some T steps.
+    """
+
     def __init__(
         self,
         generator: torch.Generator,
@@ -10,6 +16,8 @@ class DDPMSampler:
         beta_start: float = 0.00085,
         beta_end: float = 0.0120,
     ):
+        # Params "beta_start" and "beta_end" taken from: https://github.com/CompVis/stable-diffusion/blob/21f890f9da3cfbeaba8e2ac3c425ee9e998d5229/configs/stable-diffusion/v1-inference.yaml#L5C8-L5C8
+        # For the naming conventions, refer to the DDPM paper (https://arxiv.org/pdf/2006.11239.pdf)
         self.betas = (
             torch.linspace(
                 beta_start**0.5,
@@ -32,6 +40,7 @@ class DDPMSampler:
         )  # [999, 998, 997, ..., 3, 2, 1]
 
     def set_inference_steps(self, n_inference_steps: int = 50) -> None:
+        """Number of steps to keep removing the predicted noise."""
         self.n_inference_steps = n_inference_steps
 
         self.step_ratio = self.n_training_steps // n_inference_steps  # 1000 // 50 = 20
@@ -45,6 +54,7 @@ class DDPMSampler:
     def step(
         self, timestep: int, latents: torch.Tensor, model_output: torch.Tensor
     ) -> torch.Tensor:
+        """Removes the predicted noise from the image to give a less noisy image."""
         t = timestep
         prev_t = self._get_previous_timestep(t)
 
@@ -95,6 +105,7 @@ class DDPMSampler:
     def add_noise(
         self, latents: torch.FloatTensor, timestep: torch.IntTensor
     ) -> torch.FloatTensor:
+        """Addes noise to the latent vector (i.e. output of VAE encoder)."""
         alphas_hat = self.alphas_hat.to(device=latents.device, dtype=latents.dtype)
         timestep = timestep.to(device=latents.device)
 
@@ -126,6 +137,7 @@ class DDPMSampler:
         return latents
 
     def set_strength(self, strength: float = 1.0) -> None:
+        """The amount of strength determines the amount of freedom given to the model to generate an image."""
         assert strength >= 0.0 and strength <= 1.0  # stength must be between 0 and 1
         # If strength is set to 0.8, it means we skip 20% of the inference steps (i.e. 10 steps)
         # and that the model will have less freedom to change the image because it is now
@@ -136,11 +148,16 @@ class DDPMSampler:
         self.start_step = start_step
 
     def _get_previous_timestep(self, timestep: int) -> int:
+        """
+        Gets the previous timestep (i.e. current timestep - step ratio).
+        Step ratio is not 1 of generative process might take too long.
+        """
         prev_t = timestep - self.step_ratio
 
         return prev_t
 
     def _get_variance(self, timestep: int) -> torch.Tensor:
+        """Calculates the variance based on formula (7) of the DDPM paper."""
         prev_t = self._get_previous_timestep(timestep)
 
         alpha_hat_t = self.alphas_hat[timestep]

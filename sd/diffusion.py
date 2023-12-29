@@ -6,6 +6,8 @@ from attention import CrossAttention, SelfAttention
 
 
 class TimeEmbedding(nn.Module):
+    """Generates time embedding vector."""
+
     def __init__(self, n_embed: int):
         super().__init__()
         self.linear_1 = nn.Linear(n_embed, 4 * n_embed)
@@ -18,6 +20,8 @@ class TimeEmbedding(nn.Module):
 
 
 class UNetResidualBlock(nn.Module):
+    """Applies skip connections, group normalization and SiLU activation."""
+
     def __init__(self, in_channels: int, out_channels: int, n_embed: int = 1280):
         super().__init__()
         self.groupnorm_feature = nn.GroupNorm(32, in_channels)
@@ -62,6 +66,8 @@ class UNetResidualBlock(nn.Module):
 
 
 class UNetAttentionBlock(nn.Module):
+    """Applies the self-attention mechanism."""
+
     def __init__(self, n_heads: int, d_embed: int, d_context: int = 768):
         super().__init__()
         channels = n_heads * d_embed
@@ -140,6 +146,8 @@ class UNetAttentionBlock(nn.Module):
 
 
 class Upsample(nn.Module):
+    """Performs upsampling in the decoder of the UNet architecture."""
+
     def __init__(self, channels: int):
         super().__init__()
         self.conv = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
@@ -152,6 +160,12 @@ class Upsample(nn.Module):
 
 
 class SwitchSequential(nn.Sequential):
+    """
+    The latent vector passes through the UNet with either the prompt or time
+    embedding depending if it's an Attention Block or Residual Block. If neither,
+    it upsamples.
+    """
+
     def forward(
         self, x: torch.Tensor, context: torch.Tensor, time: torch.Tensor
     ) -> torch.Tensor:
@@ -162,13 +176,15 @@ class SwitchSequential(nn.Sequential):
                 )  # computes the cross attention between latent and prompt (context)
             elif isinstance(layer, UNetResidualBlock):
                 x = layer(x, time)
-            else:
+            else:  # upsampling
                 x = layer(x)
 
         return x
 
 
 class UNet(nn.Module):
+    """The entire UNet architecture."""
+
     def __init__(self):
         super().__init__()
         self.encoders = nn.ModuleList(
@@ -300,6 +316,8 @@ class UNet(nn.Module):
 
 
 class UNetOutputLayer(nn.Module):
+    """Generates an output latent vector of size equal to the vector that goes into the UNet."""
+
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         self.groupnorm = nn.GroupNorm(32, in_channels)
@@ -317,6 +335,13 @@ class UNetOutputLayer(nn.Module):
 
 
 class Diffusion(nn.Module):
+    """
+    Diffusion model consists of the three pieces:
+        1. TimeEmbedding to embed the time vector
+        2. UNet which predicts the noise
+        3. Final output which ensures the predicted noise vector is of correct shape
+    """
+
     def __init__(self):
         super().__init__()
         self.time_embedding = TimeEmbedding(320)

@@ -2,6 +2,10 @@ import torch
 
 
 def load_from_standard_weights(input_file: str, device: str) -> dict[str, torch.Tensor]:
+    """
+    From-scratch implementation has different naming conventions for the layers compared 
+    to the saved pre-trained weights. Therefore, we have to convert them.
+    """
     # Taken from: https://github.com/kjsman/stable-diffusion-pytorch/issues/7#issuecomment-1426839447
     original_model = torch.load(input_file, map_location=device, weights_only=False)[
         "state_dict"

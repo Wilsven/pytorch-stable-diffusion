@@ -6,6 +6,8 @@ from torch.nn import functional as F
 
 
 class SelfAttention(nn.Module):
+    """Performs the self-attetion mechanism."""
+
     def __init__(
         self,
         n_heads: int,
@@ -61,6 +63,8 @@ class SelfAttention(nn.Module):
 
 
 class CrossAttention(nn.Module):
+    """Performs the cross-attention mechanism. Causal mask is provided to prevent look ahead."""
+
     def __init__(
         self,
         n_heads: int,

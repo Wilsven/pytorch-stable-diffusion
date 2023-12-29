@@ -7,6 +7,7 @@ from model_converter import load_from_standard_weights
 
 
 def preload_models_from_standard_weights(ckpt_path: str, device: str) -> dict:
+    """Loads the pre-trained weights into the models."""
     state_dict = load_from_standard_weights(ckpt_path, device)
 
     encoder = Encoder().to(device)

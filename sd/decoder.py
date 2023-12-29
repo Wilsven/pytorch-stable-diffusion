@@ -5,6 +5,8 @@ from attention import SelfAttention
 
 
 class VAEResidualBlock(nn.Module):
+    """Applies skip connections, group normalization and SiLU activation."""
+
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         self.groupnorm_1 = nn.GroupNorm(32, in_channels)
@@ -38,6 +40,8 @@ class VAEResidualBlock(nn.Module):
 
 
 class VAEAttentionBlock(nn.Module):
+    """Applies the self-attention mechanism."""
+
     def __init__(self, channels: int):
         super().__init__()
         self.groupnorm = nn.GroupNorm(32, channels)
@@ -61,6 +65,8 @@ class VAEAttentionBlock(nn.Module):
 
 
 class Decoder(nn.Sequential):
+    """Decodes the latent vector (i.e output from UNet) into the generated image."""
+
     def __init__(self):
         super().__init__(
             # (b, 4, h / 8, w / 8) -> (b, 4, h / 8, w / 8)
@@ -79,6 +85,7 @@ class Decoder(nn.Sequential):
             VAEResidualBlock(512, 512),
             # (b, 512, h / 8, w / 8) -> (b, 512, h / 8, w / 8)
             VAEResidualBlock(512, 512),
+            # Repeats the rows and columns of the data by `scale_factor` (like when you resize an image by doubling its size).
             # (b, 512, h / 8, w / 8) -> (b, 512, h / 4, w / 4)
             nn.Upsample(scale_factor=2),
             # (b, 512, h / 4, w / 4) -> (b, 512, h / 4, w / 4)
@@ -119,7 +126,9 @@ class Decoder(nn.Sequential):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x.shape: (b, 4, h / 8, w / 8) - latent vector
-        x /= 0.18215  # nullify the scaling (see forward pass of Encoder)
+
+        # Nullify the scaling (see forward pass of Encoder)
+        x /= 0.18215
 
         for module in self:
             x = module(x)
